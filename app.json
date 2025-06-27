@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "TiquetApp",
+    "slug": "TiquetApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logoApp.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": ""
+    },
+    "extra": {
+      "eas": {
+        "projectId": "TiquetApp"
+      }
+    }
+  }
+}
