@@ -3,9 +3,12 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import ProductScreen from '../features/products/ProductScreen';
+import SalesScreen from '../features/sales/SalesScreen';
 
+// 🎯 Tipos de navegación actualizados
 export type RootStackParamList = {
   Products: undefined;
+  Sales: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -29,6 +32,11 @@ export default function AppNavigator() {
           name="Products" 
           component={ProductScreen}
           options={{ title: 'TiquetApp - Productos' }}
+        />
+        <Stack.Screen 
+          name="Sales" 
+          component={SalesScreen}
+          options={{ title: 'TiquetApp - Ventas' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

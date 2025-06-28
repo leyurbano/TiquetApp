@@ -6,15 +6,23 @@ import {
   StyleSheet, 
   View, 
   Text,
-  SafeAreaView 
+  SafeAreaView,
+  TouchableOpacity
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useProductList } from './useProductList';
 import { ProductCard } from './ProductCard';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
 import { Product } from './types';
 
+// 🎯 Tipo para navegación tipada
+type ProductScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
+
 export default function ProductScreen() {
+  const navigation = useNavigation<ProductScreenNavigationProp>();
   const { products, loading, error, refetch } = useProductList();
 
   if (loading && products.length === 0) {
@@ -44,12 +52,25 @@ export default function ProductScreen() {
     </View>
   );
 
+  // 🎯 Header con botón de navegación
+  const renderListHeader = () => (
+    <View style={styles.headerContainer}>
+      <TouchableOpacity 
+        style={styles.salesButton}
+        onPress={() => navigation.navigate('Sales')}
+      >
+        <Text style={styles.salesButtonText}>💰 Ver Ventas</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
         data={products}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderProduct}
+        ListHeaderComponent={renderListHeader}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -74,6 +95,27 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     paddingVertical: 8,
+  },
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  salesButton: {
+    backgroundColor: '#10b981',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  salesButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,
