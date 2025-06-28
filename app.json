@@ -17,18 +17,20 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "",
+        "foregroundImage": "./assets/logoApp.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.leyurbano.TiquetApp"
     },
     "web": {
       "favicon": ""
     },
     "extra": {
       "eas": {
-        "projectId": "TiquetApp"
+        "projectId": "be47d47e-1f7b-4fb0-af77-98080936ec86"
       }
-    }
+    },
+    "owner": "leyurbano"
   }
 }
