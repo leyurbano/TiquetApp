@@ -1,5 +1,5 @@
 // src/features/products/NewProductModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,33 +10,56 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { Button } from '../../components/ui/Button';
-import { createProduct } from '../../services/productService';
-import { CreateProduct } from './types';
+import { createProduct, updateProduct } from '../../services/productService';
+import { CreateProduct, Product } from './types';
 
 interface NewProductModalProps {
   visible: boolean;
   onClose: () => void;
   onProductCreated: () => void;
+  editingProduct?: Product | null; // Producto opcional para editar
 }
 
 export const NewProductModal: React.FC<NewProductModalProps> = ({
   visible,
   onClose,
   onProductCreated,
+  editingProduct,
 }) => {
   const [id, setId] = useState('');
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
+  const [addStock, setAddStock] = useState(''); // Campo para agregar/quitar stock
+  const [stockMode, setStockMode] = useState<'add' | 'subtract'>('add'); // Modo: agregar o quitar
   const [loading, setLoading] = useState(false);
+
+  // 🔄 Llenar campos cuando se está editando un producto
+  useEffect(() => {
+    if (editingProduct) {
+      setId(editingProduct.id.toString());
+      setName(editingProduct.name);
+      setPrice(editingProduct.price.toString());
+      setStock(editingProduct.stock.toString());
+      setAddStock(''); // Limpiar campo de agregar/quitar stock
+      setStockMode('add'); // Resetear a modo agregar
+    } else {
+      resetForm();
+    }
+  }, [editingProduct, visible]);
+
+  const isEditing = !!editingProduct;
 
   const resetForm = () => {
     setId('');
     setName('');
     setPrice('');
     setStock('');
+    setAddStock(''); // Limpiar campo de agregar/quitar stock
+    setStockMode('add'); // Resetear a modo agregar
   };
 
   const validateForm = (): boolean => {
@@ -66,6 +89,24 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
       return false;
     }
 
+    // Validar campo addStock cuando se está editando
+    if (isEditing && addStock.trim()) {
+      const addStockNum = parseInt(addStock);
+      if (isNaN(addStockNum) || addStockNum < 0) {
+        Alert.alert('❌ Error', 'La cantidad debe ser un número mayor o igual a 0');
+        return false;
+      }
+
+      // Validar que no se pueda quitar más stock del que hay
+      if (stockMode === 'subtract') {
+        const currentStock = parseInt(stock);
+        if (addStockNum > currentStock) {
+          Alert.alert('❌ Error', `No puedes quitar ${addStockNum} unidades. Solo hay ${currentStock} en stock.`);
+          return false;
+        }
+      }
+    }
+
     return true;
   };
 
@@ -75,41 +116,94 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
     try {
       setLoading(true);
 
-      const productData: CreateProduct = {
-        name: name.trim(),
-        price: parseFloat(price),
-        stock: parseInt(stock),
-      };
+      if (isEditing) {
+        // ✏️ Actualizar producto existente
+        const stockNum = parseInt(stock);
+        const addStockNum = addStock.trim() ? parseInt(addStock) : 0;
+        
+        let finalStock;
+        let operationText = '';
+        
+        if (addStockNum > 0) {
+          if (stockMode === 'add') {
+            finalStock = stockNum + addStockNum;
+            operationText = `Stock actualizado: ${stockNum} + ${addStockNum} = ${finalStock} unidades`;
+          } else {
+            finalStock = stockNum - addStockNum;
+            operationText = `Stock actualizado: ${stockNum} - ${addStockNum} = ${finalStock} unidades`;
+          }
+        } else {
+          finalStock = stockNum;
+          operationText = 'Producto actualizado correctamente (sin cambios en stock)';
+        }
 
-      // Agregar ID solo si se proporcionó
-      if (id.trim()) {
-        productData.id = parseInt(id);
-      }
+        const updateData = {
+          name: name.trim(),
+          price: parseFloat(price),
+          stock: finalStock,
+        };
 
-      console.log('📝 Creando producto:', productData);
+        console.log('✏️ Actualizando producto:', updateData);
+        console.log(`📦 Stock: ${stockNum} ${stockMode === 'add' ? '+' : '-'} ${addStockNum} = ${finalStock}`);
 
-      const newProduct = await createProduct(productData);
+        const updatedProduct = await updateProduct(editingProduct!.id.toString(), updateData);
 
-      if (newProduct) {
-        Alert.alert(
-          '✅ ¡Éxito!',
-          `El producto "${newProduct.name}" ha sido creado correctamente.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                resetForm();
-                onClose();
-                onProductCreated();
+        if (updatedProduct) {
+          Alert.alert(
+            '✅ ¡Éxito!',
+            `El producto "${updatedProduct.name}" ha sido actualizado.\n${operationText}`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  resetForm();
+                  onClose();
+                  onProductCreated();
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        } else {
+          Alert.alert('❌ Error', 'No se pudo actualizar el producto. Inténtalo de nuevo.');
+        }
       } else {
-        Alert.alert('❌ Error', 'No se pudo crear el producto. Inténtalo de nuevo.');
+        // ➕ Crear nuevo producto
+        const productData: CreateProduct = {
+          name: name.trim(),
+          price: parseFloat(price),
+          stock: parseInt(stock),
+        };
+
+        // Agregar ID solo si se proporcionó
+        if (id.trim()) {
+          productData.id = parseInt(id);
+        }
+
+        console.log('📝 Creando producto:', productData);
+
+        const newProduct = await createProduct(productData);
+
+        if (newProduct) {
+          Alert.alert(
+            '✅ ¡Éxito!',
+            `El producto "${newProduct.name}" ha sido creado correctamente.`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  resetForm();
+                  onClose();
+                  onProductCreated();
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert('❌ Error', 'No se pudo crear el producto. Inténtalo de nuevo.');
+        }
       }
     } catch (error) {
-      console.error('💥 Error creando producto:', error);
+      console.error('💥 Error guardando producto:', error);
       
       // Manejo específico de errores de duplicado de ID
       if (error instanceof Error && error.message.includes('duplicate key')) {
@@ -156,23 +250,34 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>➕ Nuevo Producto</Text>
+          <Text style={styles.title}>
+            {isEditing ? '✏️ Editar Producto' : '➕ Nuevo Producto'}
+          </Text>
           <Text style={styles.subtitle}>Completa los datos del producto</Text>
         </View>
 
         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>🆔 ID del Producto (Opcional)</Text>
+            <Text style={styles.label}>
+              🆔 ID del Producto {isEditing ? '' : '(Opcional)'}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="Ej: 12345 (se auto-genera si se deja vacío)"
+              style={[styles.input, isEditing && styles.disabledInput]}
+              placeholder={isEditing 
+                ? "ID asignado automáticamente" 
+                : "Ej: 12345 (se auto-genera si se deja vacío)"
+              }
               value={id}
               onChangeText={setId}
               keyboardType="number-pad"
               returnKeyType="next"
+              editable={!isEditing}
             />
             <Text style={styles.helpText}>
-              💡 Puedes usar tu propio código SKU o dejarlo vacío para auto-generar
+              {isEditing 
+                ? "💡 El ID no se puede modificar al editar" 
+                : "💡 Puedes usar tu propio código SKU o dejarlo vacío para auto-generar"
+              }
             </Text>
           </View>
 
@@ -204,15 +309,93 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
           <View style={styles.inputContainer}>
             <Text style={styles.label}>📊 Stock *</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input, 
+                isEditing && styles.disabledInput // Stock bloqueado cuando se edita
+              ]}
               placeholder="0"
               value={stock}
               onChangeText={setStock}
               keyboardType="number-pad"
-              returnKeyType="done"
+              returnKeyType="next"
               onSubmitEditing={handleSave}
+              editable={!isEditing} // Solo editable cuando se crea un producto nuevo
             />
+            {isEditing && (
+              <Text style={styles.disabledLabel}>
+                💡 Stock actual (no editable)
+              </Text>
+            )}
           </View>
+
+          {/* Campo adicional para agregar/quitar stock solo cuando se edita */}
+          {isEditing && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>⚡ Modificar Stock</Text>
+              
+              {/* Botones para seleccionar modo */}
+              <View style={styles.stockModeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    stockMode === 'add' && styles.modeButtonActive,
+                    stockMode === 'add' && styles.addModeActive
+                  ]}
+                  onPress={() => setStockMode('add')}
+                >
+                  <Text style={[
+                    styles.modeButtonText,
+                    stockMode === 'add' && styles.modeButtonTextActive
+                  ]}>
+                    ➕ Agregar
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    stockMode === 'subtract' && styles.modeButtonActive,
+                    stockMode === 'subtract' && styles.subtractModeActive
+                  ]}
+                  onPress={() => setStockMode('subtract')}
+                >
+                  <Text style={[
+                    styles.modeButtonText,
+                    stockMode === 'subtract' && styles.modeButtonTextActive
+                  ]}>
+                    ➖ Quitar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              <TextInput
+                style={styles.input}
+                placeholder={stockMode === 'add' ? "Cantidad a agregar" : "Cantidad a quitar"}
+                value={addStock}
+                onChangeText={setAddStock}
+                keyboardType="number-pad"
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+              />
+              <Text style={styles.helpText}>
+                💡 {stockMode === 'add' 
+                  ? 'Cantidad a agregar al stock actual' 
+                  : 'Cantidad a quitar del stock actual'
+                }
+              </Text>
+              {addStock && (
+                <Text style={[
+                  styles.stockPreviewText,
+                  stockMode === 'subtract' && styles.stockPreviewSubtract
+                ]}>
+                  📦 Nuevo total: {stockMode === 'add' 
+                    ? parseInt(stock) + (parseInt(addStock) || 0)
+                    : parseInt(stock) - (parseInt(addStock) || 0)
+                  }
+                </Text>
+              )}
+            </View>
+          )}
 
           <View style={styles.infoContainer}>
             <Text style={styles.infoText}>
@@ -230,7 +413,12 @@ export const NewProductModal: React.FC<NewProductModalProps> = ({
             style={styles.cancelButton}
           />
           <Button
-            title={loading ? "⏳ Guardando..." : "✅ Guardar"}
+            title={loading 
+              ? "⏳ Guardando..." 
+              : isEditing 
+                ? "✅ Actualizar" 
+                : "✅ Crear"
+            }
             onPress={handleSave}
             variant="success"
             size="large"
@@ -287,11 +475,64 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     color: '#111827',
   },
+  disabledInput: {
+    backgroundColor: '#f3f4f6',
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+  },
   helpText: {
     fontSize: 12,
     color: '#6b7280',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  disabledLabel: {
+    fontSize: 11,
+    color: '#9ca3af',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  stockPreviewText: {
+    fontSize: 12,
+    color: '#059669',
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  stockPreviewSubtract: {
+    color: '#dc2626', // Rojo para cuando se quita stock
+  },
+  // Nuevos estilos para los botones de modo
+  stockModeContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 4,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    // Base para botón activo
+  },
+  addModeActive: {
+    backgroundColor: '#059669', // Verde para agregar
+  },
+  subtractModeActive: {
+    backgroundColor: '#dc2626', // Rojo para quitar
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  modeButtonTextActive: {
+    color: '#ffffff',
   },
   infoContainer: {
     backgroundColor: '#dbeafe',
