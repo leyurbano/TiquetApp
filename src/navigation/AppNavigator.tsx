@@ -35,22 +35,22 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen}
-          options={{ title: 'TiquetApp' }}
+          options={{ title: 'Hola User' }}
         />
         <Stack.Screen 
           name="Products" 
           component={ProductScreen}
-          options={{ title: 'TiquetApp - Productos' }}
+          options={{ title: ' Productos' }}
         />
         <Stack.Screen 
           name="Sales" 
           component={SalesScreen}
-          options={{ title: 'TiquetApp - Ventas' }}
+          options={{ title: ' Ventas' }}
         />
         <Stack.Screen 
           name="ControlPanel" 
           component={ControlPanelScreen}
-          options={{ title: 'TiquetApp - Panel de Control' }}
+          options={{ title: ' Panel de Control' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

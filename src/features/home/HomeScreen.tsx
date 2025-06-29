@@ -80,8 +80,8 @@ export default function HomeScreen() {
 
         {/* Acciones Principales */}
         <View style={styles.mainActions}>
-          <Text style={styles.sectionTitle}>Acciones Principales</Text>
-          
+          <Text style={styles.sectionTitle}>Que desea realizar!</Text>
+
           {/* Grid de 3 botones principales */}
           <View style={styles.mainButtonsGrid}>
             <View style={styles.mainButtonContainer}>
@@ -160,26 +160,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Acciones Secundarias */}
-        <View style={styles.secondaryActions}>
-          <Text style={styles.sectionTitle}>Gestión</Text>
-          
-          <Button
-            title="� Ver Reportes de Ventas"
-            onPress={goToSales}
-            variant="outline"
-            size="medium"
-            style={styles.buttonSpacing}
-          />
-          
-          <Button
-            title="🌱 Agregar Productos Demo"
-            onPress={addSampleData}
-            variant="secondary"
-            size="medium"
-            style={styles.buttonSpacing}
-          />
-        </View>
+        
 
         {/* Consejo del día */}
         <View style={styles.tipCard}>
