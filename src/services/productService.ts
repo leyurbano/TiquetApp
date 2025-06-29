@@ -87,24 +87,42 @@ export async function getProductById(id: string): Promise<Product | null> {
 /**
  * ➕ Crear un nuevo producto
  */
-export async function createProduct(productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product | null> {
+export async function createProduct(productData: { id?: number; name: string; price: number; stock: number; }): Promise<Product | null> {
   try {
     console.log('➕ Creando nuevo producto:', productData);
     
-    // Obtener el usuario actual para asignar created_by
+    // Obtener el usuario actual para asignar user_id
     const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.error('❌ No hay usuario autenticado');
+      return null;
+    }
+
+    const insertData: any = {
+      name: productData.name,
+      price: productData.price,
+      stock: productData.stock,
+      user_id: user.id,
+      is_active: true
+    };
+
+    // Solo incluir ID si se proporcionó
+    if (productData.id) {
+      insertData.id = productData.id;
+    }
+
+    console.log('📋 Datos a insertar:', insertData);
     
     const { data, error } = await supabase
       .from('products')
-      .insert([{
-        ...productData,
-        created_by: user?.id
-      }])
+      .insert([insertData])
       .select()
       .single();
 
     if (error) {
-      console.error('❌ Error al crear producto:', error.message);
+      console.error('❌ Error al crear producto:', error);
+      console.error('❌ Detalles del error:', error.message, error.details, error.hint);
       return null;
     }
 
@@ -120,7 +138,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'created_a
 /**
  * ✏️ Actualizar un producto existente
  */
-export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'created_by'>>): Promise<Product | null> {
+export async function updateProduct(id: string, updates: { name?: string; price?: number; stock?: number; }): Promise<Product | null> {
   try {
     console.log(`✏️ Actualizando producto ${id}:`, updates);
     
@@ -135,7 +153,8 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, '
       .single();
 
     if (error) {
-      console.error('❌ Error al actualizar producto:', error.message);
+      console.error('❌ Error al actualizar producto:', error);
+      console.error('❌ Detalles del error:', error.message, error.details, error.hint);
       return null;
     }
 

@@ -34,15 +34,12 @@ export interface UserInfo {
 
 // Product
 export interface Product {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  precio_compra: number;
-  precio_venta: number;
-  stock_actual: number;
-  stock_minimo: number;
-  requiere_refrigeracion: boolean;
-  created_by?: string;
+  price: number;
+  stock: number;
+  user_id?: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

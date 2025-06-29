@@ -12,12 +12,21 @@ import { Product } from '../../types';
 /**
  * 🔧 Tipo para crear un producto
  */
-export type CreateProduct = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
+export type CreateProduct = {
+  id?: number;
+  name: string;
+  price: number;
+  stock: number;
+};
 
 /**
  * 🔧 Tipo para actualizar un producto
  */
-export type UpdateProduct = Partial<Omit<Product, 'id' | 'created_at' | 'created_by'>>;
+export type UpdateProduct = {
+  name?: string;
+  price?: number;
+  stock?: number;
+};
 
 /**
  * 🎯 Estados de carga para la UI
