@@ -1,25 +1,26 @@
 // src/features/products/ProductScreen.tsx
 import React, { useEffect, useState } from 'react';
 import { 
-  FlatList, 
   RefreshControl, 
   StyleSheet, 
   View, 
   Text,
   SafeAreaView,
   TouchableOpacity,
-  Alert
+  Alert,
+  ScrollView
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useProductList } from './useProductList';
-import { ProductCard } from './ProductCard';
+import { ProductTable } from './ProductTable';
 import { NewProductModal } from './NewProductModal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
 import { Button } from '../../components/ui/Button';
 import { Product } from './types';
+import { deleteProduct, updateProduct } from '../../services/productService';
 
 // 🎯 Tipo para navegación tipada
 type ProductScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
@@ -28,6 +29,7 @@ export default function ProductScreen() {
   const navigation = useNavigation<ProductScreenNavigationProp>();
   const { products, loading, error, refetch } = useProductList();
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // 🔄 Mostrar información de conexión al cargar
   useEffect(() => {
@@ -55,6 +57,32 @@ export default function ProductScreen() {
     );
   };
 
+  // ✏️ Función para manejar la edición de productos
+  const handleEditProduct = (product: Product) => {
+    console.log('✏️ Editando producto:', product.name);
+    setEditingProduct(product);
+    setModalVisible(true);
+  };
+
+  // 🗑️ Función para manejar la eliminación de productos
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      console.log('🗑️ Eliminando producto ID:', productId);
+      
+      const success = await deleteProduct(productId.toString());
+      
+      if (success) {
+        Alert.alert('✅ Éxito', 'Producto eliminado correctamente');
+        refetch(); // Recargar la lista
+      } else {
+        Alert.alert('❌ Error', 'No se pudo eliminar el producto');
+      }
+    } catch (error) {
+      console.error('💥 Error al eliminar producto:', error);
+      Alert.alert('❌ Error', 'Ocurrió un error al eliminar el producto');
+    }
+  };
+
   if (loading && products.length === 0) {
     return <LoadingSpinner message="Cargando productos..." />;
   }
@@ -67,10 +95,6 @@ export default function ProductScreen() {
       />
     );
   }
-
-  const renderProduct = ({ item }: { item: Product }) => (
-    <ProductCard product={item} />
-  );
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -113,40 +137,46 @@ export default function ProductScreen() {
     </View>
   );
 
-  // 🎯 Header con botones de navegación y nuevo producto
+  // 🎯 Header con botón de nuevo producto
   const renderListHeader = () => (
     <View style={styles.headerContainer}>
-      <View style={styles.buttonRow}>
-        
-        
-        <TouchableOpacity 
-          style={styles.newProductButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.newProductButtonText}>➕ Nuevo Producto</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity 
+        style={styles.newProductButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.newProductButtonText}>➕ Nuevo Producto</Text>
+      </TouchableOpacity>
       
-      {products.length > 0 && (
-        <View style={styles.statsContainer}>
-          <Text style={styles.statsText}>
-            📦 {products.length} producto{products.length !== 1 ? 's' : ''} en catálogo
-          </Text>
+      {/* Info de ayuda para el usuario - 2 bloques */}
+      <View style={styles.helpMainContainer}>
+        {/* Bloque 1: Estados */}
+        <View style={styles.helpBlock}>
+          <Text style={styles.blockTitle}>Estados:</Text>
+          <View style={styles.statusRow}>
+            <View style={[styles.statusCircle, { backgroundColor: '#ef4444' }]} />
+            <Text style={styles.miniText}>Sin stock</Text>
+            <View style={[styles.statusCircle, { backgroundColor: '#10b981' }]} />
+            <Text style={styles.miniText}>Disponible</Text>
+          </View>
         </View>
-      )}
+
+        {/* Bloque 2: Acciones */}
+        <View style={styles.helpBlock}>
+          <Text style={styles.blockTitle}>Acciones:</Text>
+          <Text style={styles.actionInfo}>✏️ Editar • 🗑️ Eliminar</Text>
+        </View>
+      </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderProduct}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        ListHeaderComponent={renderListHeader}
-        contentContainerStyle={styles.listContent}
+      {/* Header siempre visible */}
+      {renderListHeader()}
+      
+      {/* Vista de Tabla siempre */}
+      <ScrollView 
+        style={styles.tableContainer}
         refreshControl={
           <RefreshControl
             refreshing={loading}
@@ -155,16 +185,27 @@ export default function ProductScreen() {
             tintColor="#2563eb"
           />
         }
-        ListEmptyComponent={renderEmptyList}
-        showsVerticalScrollIndicator={false}
-      />
+      >
+        {products.length === 0 ? renderEmptyList() : (
+          <ProductTable 
+            products={products} 
+            onEditProduct={handleEditProduct}
+            onDeleteProduct={handleDeleteProduct}
+          />
+        )}
+      </ScrollView>
       
       <NewProductModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false);
+          setEditingProduct(null); // Limpiar producto en edición
+        }}
         onProductCreated={() => {
           refetch(); // Recargar la lista de productos
+          setEditingProduct(null); // Limpiar producto en edición
         }}
+        editingProduct={editingProduct} // Pasar producto a editar
       />
     </SafeAreaView>
   );
@@ -175,39 +216,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9fafb',
   },
-  listContent: {
-    flexGrow: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  row: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
   headerContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  salesButton: {
-    flex: 1,
-    backgroundColor: '#10b981',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
   newProductButton: {
-    flex: 1,
+    marginTop: 16,
     backgroundColor: '#2563eb',
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -218,28 +232,52 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-  },
-  salesButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    marginBottom: 12,
   },
   newProductButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  statsContainer: {
-    backgroundColor: '#f3f4f6',
+  helpMainContainer: {
+    gap: 8,
+    marginTop: 4,
+  },
+  helpBlock: {
+    backgroundColor: '#f8fafc',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blockTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+    marginRight: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  statsText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+  statusCircle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 3,
+  },
+  miniText: {
+    fontSize: 10,
+    color: '#64748b',
+    marginRight: 8,
+  },
+  actionInfo: {
+    fontSize: 10,
+    color: '#64748b',
   },
   emptyContainer: {
     flex: 1,
@@ -263,5 +301,9 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  tableContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
 });
