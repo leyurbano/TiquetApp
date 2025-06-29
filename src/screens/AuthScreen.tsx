@@ -8,6 +8,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
+  StatusBar,
 } from 'react-native';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -50,7 +52,7 @@ export const AuthScreen: React.FC = () => {
           
           let errorMessage = result.error;
           if (result.error.includes('Invalid login credentials')) {
-            errorMessage = 'Email o contraseña incorrectos.\n\n💡 Sugerencias:\n• Verifica que el usuario exista en Supabase\n• Usa "Datos de Prueba" si es tu primera vez';
+            errorMessage = 'Email o contraseña incorrectos.\n\nVerifica tus credenciales e intenta nuevamente.';
           }
           
           Alert.alert('Error de Login', errorMessage);
@@ -68,7 +70,7 @@ export const AuthScreen: React.FC = () => {
           
           let errorMessage = result.error;
           if (result.error.includes('Database error')) {
-            errorMessage = 'Error de base de datos.\n\n💡 Solución:\n• Ejecuta el SQL de configuración en Supabase\n• O crea el usuario manualmente en el Dashboard\n\nVe SOLUCION_INMEDIATA.md para más detalles';
+            errorMessage = 'Error de base de datos al crear la cuenta.\n\nPor favor, intenta nuevamente en unos momentos.';
           } else if (result.error.includes('already registered')) {
             errorMessage = 'Este email ya está registrado.\n\nPrueba iniciar sesión en su lugar.';
           }
@@ -91,16 +93,7 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleTestUser = async () => {
-    setLoading(true);
-    setFormData({
-      email: 'test@tiquet.app',
-      password: 'password123456',
-      fullName: 'Usuario de Prueba',
-      phone: '123456789',
-    });
-    setLoading(false);
-  };
+
 
   if (loading) {
     return (
@@ -118,9 +111,20 @@ export const AuthScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#f8fafc" 
+        translucent={false} 
+      />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>TiquetApp</Text>
+          <Text style={styles.welcomeTitle}>¡Bienvenidos!</Text>
+          <Text style={styles.welcomeSubtitle}>a</Text>
+          <Image 
+            source={require('../../assets/logoApp.png')} 
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.subtitle}>
             {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea tu cuenta nueva'}
           </Text>
@@ -170,13 +174,6 @@ export const AuthScreen: React.FC = () => {
             disabled={loading}
             style={styles.submitButton}
           />
-
-          <Button
-            title="Usar Datos de Prueba"
-            onPress={handleTestUser}
-            variant="outline"
-            style={styles.testButton}
-          />
         </View>
 
         <View style={styles.footer}>
@@ -203,6 +200,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
+    paddingTop: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -217,12 +215,25 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 32,
+  welcomeTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#1e293b',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  logo: {
+    width: 160,
+    height: 160,
     marginBottom: 8,
   },
   subtitle: {
@@ -235,9 +246,6 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 20,
-  },
-  testButton: {
-    marginTop: 12,
   },
   footer: {
     alignItems: 'center',
