@@ -1,6 +1,6 @@
-// src/services/productService.new.ts
+// src/services/productService.ts
 import { supabase } from "../config/supabase";
-import { Product, CreateProduct, UpdateProduct } from "../features/products/types";
+import { Product, ProductWithDetails } from "../types";
 
 /**
  * 📊 Obtener todos los productos de la tabla products
@@ -10,9 +10,9 @@ export async function getProducts(): Promise<Product[]> {
     console.log('📊 Obteniendo productos desde Supabase...');
     
     const { data, error } = await supabase
-      .from('products') // tabla en minúsculas
+      .from('products')
       .select('*')
-      .order('id', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('❌ Error al obtener productos:', error.message);
@@ -24,6 +24,35 @@ export async function getProducts(): Promise<Product[]> {
     
   } catch (error) {
     console.error('💥 Error inesperado al obtener productos:', error);
+    return [];
+  }
+}
+
+/**
+ * 📊 Obtener productos con información del creador
+ */
+export async function getProductsWithDetails(): Promise<ProductWithDetails[]> {
+  try {
+    console.log('📊 Obteniendo productos con detalles...');
+    
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        created_by_info:users_info(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error al obtener productos con detalles:', error.message);
+      return [];
+    }
+
+    console.log('✅ Productos con detalles obtenidos:', data?.length || 0);
+    return data as ProductWithDetails[];
+    
+  } catch (error) {
+    console.error('💥 Error inesperado al obtener productos con detalles:', error);
     return [];
   }
 }
@@ -58,13 +87,19 @@ export async function getProductById(id: string): Promise<Product | null> {
 /**
  * ➕ Crear un nuevo producto
  */
-export async function createProduct(productData: CreateProduct): Promise<Product | null> {
+export async function createProduct(productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product | null> {
   try {
     console.log('➕ Creando nuevo producto:', productData);
     
+    // Obtener el usuario actual para asignar created_by
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const { data, error } = await supabase
       .from('products')
-      .insert([productData])
+      .insert([{
+        ...productData,
+        created_by: user?.id
+      }])
       .select()
       .single();
 
@@ -85,13 +120,16 @@ export async function createProduct(productData: CreateProduct): Promise<Product
 /**
  * ✏️ Actualizar un producto existente
  */
-export async function updateProduct(id: string, updates: UpdateProduct): Promise<Product | null> {
+export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'created_by'>>): Promise<Product | null> {
   try {
     console.log(`✏️ Actualizando producto ${id}:`, updates);
     
     const { data, error } = await supabase
       .from('products')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single();
@@ -137,18 +175,108 @@ export async function deleteProduct(id: string): Promise<boolean> {
 }
 
 /**
+ * 📦 Actualizar stock de un producto
+ */
+export async function updateProductStock(id: string, newStock: number, motivo?: string): Promise<boolean> {
+  try {
+    console.log(`📦 Actualizando stock del producto ${id} a ${newStock}`);
+    
+    // Obtener el stock actual
+    const { data: currentProduct } = await supabase
+      .from('products')
+      .select('stock_actual')
+      .eq('id', id)
+      .single();
+
+    if (!currentProduct) {
+      console.error('❌ Producto no encontrado');
+      return false;
+    }
+
+    const stockAnterior = currentProduct.stock_actual;
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Actualizar el stock del producto
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ 
+        stock_actual: newStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('❌ Error al actualizar stock:', updateError.message);
+      return false;
+    }
+
+    // Registrar el movimiento de inventario
+    const { error: movementError } = await supabase
+      .from('movimientos_inventario')
+      .insert({
+        product_id: id,
+        tipo_movimiento: 'ajuste',
+        cantidad: newStock - stockAnterior,
+        stock_anterior: stockAnterior,
+        stock_nuevo: newStock,
+        motivo: motivo || 'Ajuste manual de inventario',
+        creado_por: user?.id
+      });
+
+    if (movementError) {
+      console.error('⚠️ Error al registrar movimiento:', movementError.message);
+      // No retornamos false porque el stock sí se actualizó
+    }
+
+    console.log('✅ Stock actualizado exitosamente');
+    return true;
+    
+  } catch (error) {
+    console.error('💥 Error inesperado al actualizar stock:', error);
+    return false;
+  }
+}
+
+/**
  * 🧪 Insertar productos de prueba
  */
 export async function insertTestProducts(): Promise<boolean> {
   try {
     console.log('🧪 Insertando productos de prueba...');
     
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const testProducts = [
-      { name: 'Smartphone Samsung Galaxy', price: 299.99, stock: 15 },
-      { name: 'Laptop HP Pavilion', price: 599.99, stock: 8 },
-      { name: 'Auriculares Sony WH-1000XM4', price: 199.99, stock: 25 },
-      { name: 'Tablet iPad Air', price: 449.99, stock: 12 },
-      { name: 'Monitor LG 27 pulgadas', price: 179.99, stock: 20 }
+      { 
+        name: 'Coca Cola 600ml', 
+        description: 'Bebida gaseosa sabor original',
+        precio_compra: 800, 
+        precio_venta: 1200, 
+        stock_actual: 50,
+        stock_minimo: 10,
+        requiere_refrigeracion: true,
+        created_by: user?.id
+      },
+      { 
+        name: 'Pan Tajado Bimbo', 
+        description: 'Pan de molde rebanado',
+        precio_compra: 2000, 
+        precio_venta: 2800, 
+        stock_actual: 20,
+        stock_minimo: 5,
+        requiere_refrigeracion: false,
+        created_by: user?.id
+      },
+      { 
+        name: 'Leche Entera Alpina 1L', 
+        description: 'Leche entera pasteurizada',
+        precio_compra: 2500, 
+        precio_venta: 3200, 
+        stock_actual: 30,
+        stock_minimo: 8,
+        requiere_refrigeracion: true,
+        created_by: user?.id
+      }
     ];
 
     const { data, error } = await supabase
@@ -171,26 +299,33 @@ export async function insertTestProducts(): Promise<boolean> {
 }
 
 /**
- * 📋 Obtener información de la tabla products
+ * � Obtener productos con bajo stock
  */
-export async function getTableInfo(): Promise<void> {
+export async function getLowStockProducts(): Promise<Product[]> {
   try {
-    console.log('📋 Obteniendo información de la tabla products...');
+    console.log('� Obteniendo productos con bajo stock...');
     
-    // Obtener una muestra de datos
+    // Obtenemos todos los productos y filtramos en JavaScript
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .limit(1);
+      .order('stock_actual', { ascending: true });
 
     if (error) {
-      console.error('❌ Error al obtener info de tabla:', error.message);
-      return;
+      console.error('❌ Error al obtener productos:', error.message);
+      return [];
     }
 
-    console.log('📊 Estructura de la tabla products:', data?.[0] || 'Tabla vacía');
+    // Filtrar productos donde stock_actual <= stock_minimo
+    const lowStockProducts = data?.filter(product => 
+      product.stock_actual <= product.stock_minimo
+    ) || [];
+
+    console.log('✅ Productos con bajo stock obtenidos:', lowStockProducts.length);
+    return lowStockProducts as Product[];
     
   } catch (error) {
-    console.error('💥 Error inesperado al obtener info de tabla:', error);
+    console.error('💥 Error inesperado al obtener productos con bajo stock:', error);
+    return [];
   }
 }

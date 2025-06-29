@@ -3,7 +3,7 @@ import React from 'react';
 import { Text, StyleSheet, View, Dimensions } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/currency';
-import { Product } from './types';
+import { Product } from '../../types';
 
 // 📱 Obtener el ancho de la pantalla para calcular el ancho de cada card
 const { width: screenWidth } = Dimensions.get('window');
@@ -14,13 +14,13 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const getStockStatus = (stockValue: number) => {
-    if (stockValue === 0) return { text: 'Sin stock', color: '#ef4444' };
-    if (stockValue <= 5) return { text: 'Stock bajo', color: '#f59e0b' };
+  const getStockStatus = (stockActual: number, stockMinimo: number) => {
+    if (stockActual === 0) return { text: 'Sin stock', color: '#ef4444' };
+    if (stockActual <= stockMinimo) return { text: 'Stock bajo', color: '#f59e0b' };
     return { text: 'Disponible', color: '#10b981' };
   };
 
-  const stockStatus = getStockStatus(product.stock);
+  const stockStatus = getStockStatus(product.stock_actual, product.stock_minimo);
 
   // 📅 Formatear fecha de creación
   const formatDate = (dateString: string) => {
@@ -41,19 +41,40 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* 📋 Información principal */}
       <View style={styles.header}>
         <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
-        <Text style={styles.price}>{formatCurrency(product.price)}</Text>
+        {product.description && (
+          <Text style={styles.description} numberOfLines={2}>{product.description}</Text>
+        )}
+        <View style={styles.priceContainer}>
+          <Text style={styles.priceLabel}>Venta:</Text>
+          <Text style={styles.price}>{formatCurrency(product.precio_venta)}</Text>
+        </View>
+        {product.precio_compra > 0 && (
+          <View style={styles.priceContainer}>
+            <Text style={styles.costLabel}>Compra:</Text>
+            <Text style={styles.cost}>{formatCurrency(product.precio_compra)}</Text>
+          </View>
+        )}
       </View>
       
       {/* 📦 Stock y estado */}
       <View style={styles.footer}>
-        <Text style={styles.stockLabel}>Stock: {product.stock}</Text>
+        <View style={styles.stockInfo}>
+          <Text style={styles.stockLabel}>
+            Stock: {product.stock_actual}/{product.stock_minimo}
+          </Text>
+          {product.requiere_refrigeracion && (
+            <Text style={styles.refrigerationLabel}>❄️ Refrigeración</Text>
+          )}
+        </View>
         <View style={[styles.statusBadge, { backgroundColor: stockStatus.color }]}>
           <Text style={styles.statusText}>{stockStatus.text}</Text>
         </View>
       </View>
       
-      {/* 🆔 ID del producto */}
-      <Text style={styles.idInfo}>ID: {product.id}</Text>
+      {/* 📅 Fecha de creación */}
+      <Text style={styles.dateInfo}>
+        Creado: {formatDate(product.created_at)}
+      </Text>
     </Card>
   );
 };
@@ -74,21 +95,56 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 20,
   },
+  description: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  priceLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
   price: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#2563eb',
-    marginBottom: 8,
+  },
+  costLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  cost: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#059669',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: 8,
+  },
+  stockInfo: {
+    flex: 1,
   },
   stockLabel: {
     fontSize: 12,
     color: '#6b7280',
+    marginBottom: 2,
+  },
+  refrigerationLabel: {
+    fontSize: 10,
+    color: '#3b82f6',
+    fontWeight: '500',
   },
   statusBadge: {
     paddingHorizontal: 6,
@@ -100,10 +156,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  idInfo: {
+  dateInfo: {
     fontSize: 10,
     color: '#9ca3af',
-    fontFamily: 'monospace',
     textAlign: 'center',
   },
 });
