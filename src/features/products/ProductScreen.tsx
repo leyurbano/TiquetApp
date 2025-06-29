@@ -1,5 +1,5 @@
 // src/features/products/ProductScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FlatList, 
   RefreshControl, 
@@ -7,15 +7,18 @@ import {
   View, 
   Text,
   SafeAreaView,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { useProductList } from './useProductList';
 import { ProductCard } from './ProductCard';
+import { NewProductModal } from './NewProductModal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { ErrorMessage } from '../../components/ui/ErrorMessage';
+import { Button } from '../../components/ui/Button';
 import { Product } from './types';
 
 // 🎯 Tipo para navegación tipada
@@ -24,6 +27,33 @@ type ProductScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Prod
 export default function ProductScreen() {
   const navigation = useNavigation<ProductScreenNavigationProp>();
   const { products, loading, error, refetch } = useProductList();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // 🔄 Mostrar información de conexión al cargar
+  useEffect(() => {
+    console.log('📦 ProductScreen cargado');
+    console.log('🔢 Total productos:', products.length);
+    console.log('⏳ Loading:', loading);
+    console.log('❌ Error:', error);
+  }, [products, loading, error]);
+
+  // 🧪 Función para probar la conexión manualmente
+  const testConnection = () => {
+    Alert.alert(
+      '🧪 Prueba de Conexión',
+      `Estado actual:
+      
+📊 Productos: ${products.length}
+⏳ Cargando: ${loading ? 'Sí' : 'No'}
+❌ Error: ${error || 'Ninguno'}
+
+¿Quieres recargar los datos?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: '🔄 Recargar', onPress: refetch }
+      ]
+    );
+  };
 
   if (loading && products.length === 0) {
     return <LoadingSpinner message="Cargando productos..." />;
@@ -45,22 +75,65 @@ export default function ProductScreen() {
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>📦</Text>
-      <Text style={styles.emptyMessage}>No hay productos disponibles</Text>
-      <Text style={styles.emptySubtext}>
-        Los productos aparecerán aquí cuando estén disponibles
+      <Text style={styles.emptyMessage}>
+        {error ? 'Error al cargar productos' : 'No hay productos disponibles'}
       </Text>
+      <Text style={styles.emptySubtext}>
+        {error 
+          ? 'Verifica tu conexión a Supabase' 
+          : 'Agrega tu primer producto para comenzar'
+        }
+      </Text>
+      
+      {!error && (
+        <Button
+          title="➕ Crear Primer Producto"
+          onPress={() => setModalVisible(true)}
+          variant="success"
+          size="medium"
+          style={{ marginTop: 16 }}
+        />
+      )}
+      
+      <Button
+        title="🧪 Probar Conexión"
+        onPress={testConnection}
+        variant="outline"
+        size="medium"
+        style={{ marginTop: 8 }}
+      />
+      
+      <Button
+        title="🔄 Recargar"
+        onPress={refetch}
+        variant="primary"
+        size="medium"
+        style={{ marginTop: 8 }}
+      />
     </View>
   );
 
-  // 🎯 Header con botón de navegación
+  // 🎯 Header con botones de navegación y nuevo producto
   const renderListHeader = () => (
     <View style={styles.headerContainer}>
-      <TouchableOpacity 
-        style={styles.salesButton}
-        onPress={() => navigation.navigate('Sales')}
-      >
-        <Text style={styles.salesButtonText}>💰 Ver Ventas</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        
+        
+        <TouchableOpacity 
+          style={styles.newProductButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.newProductButtonText}>➕ Nuevo Producto</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {products.length > 0 && (
+        <View style={styles.statsContainer}>
+          <Text style={styles.statsText}>
+            📦 {products.length} producto{products.length !== 1 ? 's' : ''} en catálogo
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -70,6 +143,8 @@ export default function ProductScreen() {
         data={products}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderProduct}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
         ListHeaderComponent={renderListHeader}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -83,6 +158,14 @@ export default function ProductScreen() {
         ListEmptyComponent={renderEmptyList}
         showsVerticalScrollIndicator={false}
       />
+      
+      <NewProductModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onProductCreated={() => {
+          refetch(); // Recargar la lista de productos
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -95,13 +178,37 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  row: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
   },
   headerContainer: {
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
   salesButton: {
+    flex: 1,
     backgroundColor: '#10b981',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  newProductButton: {
+    flex: 1,
+    backgroundColor: '#2563eb',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -116,6 +223,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  newProductButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statsContainer: {
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  statsText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,

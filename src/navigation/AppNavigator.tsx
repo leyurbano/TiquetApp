@@ -5,12 +5,14 @@ import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../features/home/HomeScreen';
 import ProductScreen from '../features/products/ProductScreen';
 import SalesScreen from '../features/sales/SalesScreen';
+import ControlPanelScreen from '../features/admin/ControlPanelScreen';
 
 // 🎯 Tipos de navegación actualizados
 export type RootStackParamList = {
-  Home: undefined;      // ← Nueva pantalla agregada
+  Home: undefined;
   Products: undefined;
   Sales: undefined;
+  ControlPanel: undefined;  // ← Nueva pantalla agregada
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -44,6 +46,11 @@ export default function AppNavigator() {
           name="Sales" 
           component={SalesScreen}
           options={{ title: 'TiquetApp - Ventas' }}
+        />
+        <Stack.Screen 
+          name="ControlPanel" 
+          component={ControlPanelScreen}
+          options={{ title: 'TiquetApp - Panel de Control' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
