@@ -8,7 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  ImageBackground,
   StatusBar,
 } from 'react-native';
 import { Input } from '../components/ui/Input';
@@ -107,30 +107,31 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
+    <ImageBackground
+      source={require('../../assets/logoApp.png')}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      resizeMode="contain"
+      imageStyle={styles.backgroundImage}
     >
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#f8fafc" 
-        translucent={false} 
-      />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.welcomeTitle}>¡Bienvenidos!</Text>
-          <Text style={styles.welcomeSubtitle}>a</Text>
-          <Image 
-            source={require('../../assets/logoApp.png')} 
-            style={styles.logo}
-            resizeMode="contain"
+      <View style={styles.overlay}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <StatusBar 
+            barStyle="light-content" 
+            backgroundColor="rgba(0,0,0,0.3)" 
+            translucent={false} 
           />
-          <Text style={styles.subtitle}>
-            {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea tu cuenta nueva'}
-          </Text>
-        </View>
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.header}>
+              <Text style={styles.welcomeTitle}>¡Bienvenidos!</Text>
+              <Text style={styles.subtitle}>
+                {isLogin ? 'Inicia sesión en tu cuenta' : 'Crea tu cuenta nueva'}
+              </Text>
+            </View>
 
-        <View style={styles.form}>
+            <View style={styles.form}>
           {!isLogin && (
             <>
               <Input
@@ -185,16 +186,33 @@ export const AuthScreen: React.FC = () => {
             onPress={() => setIsLogin(!isLogin)}
             variant="outline"
           />
+          
+          <Text style={styles.versionText}>v1.0.0</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  </View>
+</ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+  },
+  backgroundImage: {
+    top: 20, // Subido aún más (era 50)
+    left: '50%',
+    marginLeft: '-30%',
+    width: '60%',
+    height: '25%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)', // Capa semitransparente más suave
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -215,31 +233,27 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 40,
+    marginTop: 80, // Bajado un poco más (era sin marginTop)
   },
   welcomeTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  welcomeSubtitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  logo: {
-    width: 160,
-    height: 160,
+    color: '#ffffff',
     marginBottom: 8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748b',
+    color: '#ffffff',
     textAlign: 'center',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   form: {
     marginBottom: 32,
@@ -252,7 +266,20 @@ const styles = StyleSheet.create({
   },
   switchText: {
     fontSize: 14,
-    color: '#64748b',
+    color: '#ffffff',
     marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 20,
+    opacity: 0.8,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });

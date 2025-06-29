@@ -6,6 +6,7 @@ import { RootStackParamList } from '../../navigation/AppNavigator';
 import { Button, LoadingSpinner } from '../../components/ui';
 import { insertTestProducts } from '../../services/productService';
 import { useDashboardStats } from './useDashboardStats';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 // 🎯 Tipo para navegación tipada
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -15,7 +16,8 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
  */
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { totalProducts, totalSales, totalRevenue, loading, error, refetch } = useDashboardStats();
+  const { totalProducts, totalSales, totalCredito, loading, error, refetch } = useDashboardStats();
+  const { userProfile } = useAuthContext();
 
   // 🚀 Navegación principal
   const goToProducts = () => {
@@ -72,10 +74,13 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>🎫 TiquetApp</Text>
-          <Text style={styles.subtitle}>
-            Sistema de gestión empresarial
-          </Text>
+          {/* Título principal */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>🎫 TiquetApp</Text>
+            <Text style={styles.subtitle}>
+              Sistema de gestión empresarial
+            </Text>
+          </View>
         </View>
 
         {/* Acciones Principales */}
@@ -153,7 +158,7 @@ export default function HomeScreen() {
               <View style={styles.statDivider} />
               
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>${totalRevenue}</Text>
+                <Text style={styles.statNumber}>${totalCredito}</Text>
                 <Text style={styles.statLabel}>Ingresos</Text>
               </View>
             </View>
@@ -195,6 +200,32 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginVertical: 24,
+  },
+  userGreeting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 16,
+  },
+  greetingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#3b82f6', // Color azul
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  logoutButton: {
+    minWidth: 80,
+    borderColor: '#dc2626',
   },
   title: {
     fontSize: 36,
