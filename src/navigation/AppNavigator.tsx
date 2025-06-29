@@ -2,11 +2,13 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import HomeScreen from '../features/home/HomeScreen';
 import ProductScreen from '../features/products/ProductScreen';
 import SalesScreen from '../features/sales/SalesScreen';
 
 // 🎯 Tipos de navegación actualizados
 export type RootStackParamList = {
+  Home: undefined;      // ← Nueva pantalla agregada
   Products: undefined;
   Sales: undefined;
 };
@@ -17,7 +19,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Products"
+        initialRouteName="Home"
         screenOptions={{
           headerStyle: {
             backgroundColor: '#2563eb',
@@ -28,6 +30,11 @@ export default function AppNavigator() {
           },
         }}
       >
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen}
+          options={{ title: 'TiquetApp' }}
+        />
         <Stack.Screen 
           name="Products" 
           component={ProductScreen}
