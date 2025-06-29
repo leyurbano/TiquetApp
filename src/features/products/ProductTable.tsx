@@ -31,26 +31,31 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       : { isAvailable: true, color: '#10b981' };  // Verde para disponible
   };
 
-  // Función para truncar el nombre del producto
-  const formatProductName = (name: string) => {
-    // Si es menor o igual a 12 caracteres, mostrar completo
-    if (name.length <= 12) return name;
-    
-    // Si es mayor, buscar un espacio cerca del límite para cortar mejor
-    const words = name.split(' ');
-    let result = '';
-    
-    for (const word of words) {
-      if ((result + word).length <= 12) {
-        result += (result ? ' ' : '') + word;
-      } else {
-        break;
-      }
-    }
-    
-    // Si no pudimos formar ninguna palabra completa, truncar en 12
-    return result || name.substring(0, 12);
-  };
+  // Función para truncar el nombre del producto (no se usa - nombres completos en múltiples líneas)
+  // const formatProductName = (name: string) => {
+  //   // Si es menor o igual a 22 caracteres, mostrar completo
+  //   if (name.length <= 22) return name;
+  //   
+  //   // Si es mayor, buscar un espacio cerca del límite para cortar mejor
+  //   const words = name.split(' ');
+  //   let result = '';
+  //   
+  //   for (const word of words) {
+  //     if ((result + word).length <= 22) {
+  //       result += (result ? ' ' : '') + word;
+  //     } else {
+  //       break;
+  //     }
+  //   }
+  //   
+  //   // Si no pudimos formar ninguna palabra completa, truncar en 22 y agregar "..."
+  //   if (!result) {
+  //     return name.substring(0, 19) + '...';
+  //   }
+  //   
+  //   // Si el resultado es menor que el original, agregar "..."
+  //   return result.length < name.length ? result + '...' : result;
+  // };
 
   // Función para formatear precio con máximo 6 dígitos
   const formatPrice = (price: number) => {
@@ -90,12 +95,24 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       <View style={styles.table}>
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={[styles.cell, styles.headerCell, styles.idColumn]}>ID</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.nameColumn]}>Producto</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.priceColumn]}>Precio</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.stockColumn]}>Stock</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.statusColumn]}>Estado</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.actionsColumn]}>Acciones</Text>
+          <View style={[styles.cell, styles.idColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>ID</Text>
+          </View>
+          <View style={[styles.cell, styles.nameColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>Producto</Text>
+          </View>
+          <View style={[styles.cell, styles.priceColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>Precio</Text>
+          </View>
+          <View style={[styles.cell, styles.stockColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>Stock</Text>
+          </View>
+          <View style={[styles.cell, styles.statusColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>Estado</Text>
+          </View>
+          <View style={[styles.cell, styles.actionsColumn]}>
+            <Text style={styles.headerText} numberOfLines={1}>Acciones</Text>
+          </View>
         </View>
 
         {/* Rows */}
@@ -109,27 +126,32 @@ export const ProductTable: React.FC<ProductTableProps> = ({
               style={[styles.row, isEven ? styles.evenRow : styles.oddRow]}
             >
               {/* ID */}
-              <Text style={[styles.cell, styles.idColumn, styles.idText]}>
-                {product.id}
-              </Text>
+              <View style={[styles.cell, styles.idColumn]}>
+                <Text style={styles.idText} numberOfLines={1}>
+                  {product.id}
+                </Text>
+              </View>
 
               {/* Nombre */}
-              <Text
-                style={[styles.cell, styles.nameColumn, styles.nameText]}
-                numberOfLines={3}
-              >
-                {formatProductName(product.name)}
-              </Text>
+              <View style={[styles.cell, styles.nameColumn]}>
+                <Text style={styles.nameText} numberOfLines={3}>
+                  {product.name}
+                </Text>
+              </View>
 
               {/* Precio */}
-              <Text style={[styles.cell, styles.priceColumn, styles.priceText]}>
-                {formatPrice(product.price)}
-              </Text>
+              <View style={[styles.cell, styles.priceColumn]}>
+                <Text style={styles.priceText} numberOfLines={1}>
+                  {formatPrice(product.price)}
+                </Text>
+              </View>
 
               {/* Stock */}
-              <Text style={[styles.cell, styles.stockColumn, styles.stockText]}>
-                {product.stock}
-              </Text>
+              <View style={[styles.cell, styles.stockColumn]}>
+                <Text style={styles.stockText} numberOfLines={1}>
+                  {product.stock}
+                </Text>
+              </View>
 
               {/* Estado - Solo círculo de color */}
               <View style={[styles.cell, styles.statusColumn]}>
@@ -189,19 +211,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   cell: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 8, // Reducido ligeramente para mejor distribución
+    paddingHorizontal: 6, // Reducido para aprovechar mejor el espacio horizontal
     justifyContent: 'center',
     alignItems: 'center',
     borderRightWidth: 1,
     borderRightColor: '#e5e7eb',
-    minHeight: 50, // Altura mínima para permitir texto en múltiples líneas
-  },
-  headerCell: {
-    fontWeight: 'bold',
-    color: '#374151',
-    fontSize: 14,
-    backgroundColor: '#f3f4f6',
+    minHeight: 60, // Aumentado para acomodar texto en múltiples líneas
   },
   // Anchos de columnas
   idColumn: {
@@ -209,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nameColumn: {
-    width: 100, // Reducido para máximo 12 letras
+    width: 100, // Volver al tamaño compacto - texto se distribuye en múltiples líneas
     alignItems: 'center',
   },
   priceColumn: {
@@ -221,7 +237,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusColumn: {
-    width: 60, // Solo círculo
+    width: 80, // Aumentado para que quepa "Estado" completo sin partirse
     alignItems: 'center',
   },
   actionsColumn: {
@@ -230,26 +246,26 @@ const styles = StyleSheet.create({
   },
   // Estilos de texto
   idText: {
-    fontSize: 12,
+    fontSize: 14, // Aumentado de 12 a 14
     color: '#6b7280',
     fontFamily: 'monospace',
     textAlign: 'center',
   },
   nameText: {
-    fontSize: 12,
+    fontSize: 14, // Tamaño más pequeño para que quepa mejor en múltiples líneas
     color: '#111827',
     fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14, // Líneas más compactas para mejor aprovechamiento del espacio
   },
   priceText: {
-    fontSize: 12,
+    fontSize: 14, // Aumentado de 12 a 14
     color: '#2563eb',
     fontWeight: '600',
     textAlign: 'center',
   },
   stockText: {
-    fontSize: 12,
+    fontSize: 14, // Aumentado de 12 a 14
     color: '#374151',
     fontWeight: '500',
     textAlign: 'center',
@@ -259,6 +275,13 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
+  },
+  // Estilo para todos los headers de la tabla
+  headerText: {
+    fontWeight: 'bold',
+    color: '#374151',
+    fontSize: 14,
+    textAlign: 'center',
   },
   // Acciones
   actionsContainer: {
@@ -279,10 +302,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
   },
   editButtonText: {
-    fontSize: 14,
+    fontSize: 16, // Aumentado de 14 a 16
   },
   deleteButtonText: {
-    fontSize: 14,
+    fontSize: 16, // Aumentado de 14 a 16
   },
   // Estado vacío
   emptyContainer: {
