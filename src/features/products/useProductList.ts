@@ -1,7 +1,7 @@
 // src/features/products/useProductList.ts
 import { useState, useEffect } from 'react';
 import { getProducts } from '../../services/productService';
-import { Product } from './types';
+import { Product } from '../../types';
 
 export const useProductList = () => {
   const [products, setProducts] = useState<Product[]>([]);
