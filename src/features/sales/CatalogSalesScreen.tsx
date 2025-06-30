@@ -236,10 +236,36 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
       
       console.log('✅ Venta facturada exitosamente:', result);
 
+      // Generar factura completa con formato mejorado
+      console.log('🧾 Generando factura completa...');
+      const invoice = await salesService.generateInvoice(result.id);
+      
+      if (invoice) {
+        console.log('📄 FACTURA GENERADA:');
+        console.log('═'.repeat(50));
+        console.log(`           ${invoice.header.appName.toUpperCase()}`);
+        console.log('═'.repeat(50));
+        console.log(`FACTURA: ${invoice.header.invoiceNumber}`);
+        console.log(`FECHA: ${invoice.header.date}`);
+        console.log(`CLIENTE: ${invoice.header.customerName}`);
+        console.log(`VENDEDOR: ${invoice.header.vendorName}`);
+        console.log('─'.repeat(50));
+        
+        invoice.items.forEach(item => {
+          console.log(`${item.lineNumber}. ${item.productName} - ${item.quantity} × $${item.unitPrice.toLocaleString('es-CO')} = $${item.totalPrice.toLocaleString('es-CO')}`);
+        });
+        
+        console.log('─'.repeat(50));
+        console.log(`TOTAL: $${invoice.summary.total.toLocaleString('es-CO')} COP`);
+        console.log('═'.repeat(50));
+      }
+
       // Mostrar cuadro de confirmación de impresión
+      const facturaNumero = invoice?.header.invoiceNumber || result.numero_pedido;
+      
       Alert.alert(
         '✅ ¡Venta Facturada!',
-        `Se facturó la venta por $COP ${getTotalAmount().toLocaleString('es-CO')}\n\n¿Desea imprimir la factura?`,
+        `Factura: ${facturaNumero}\nTotal: $COP ${getTotalAmount().toLocaleString('es-CO')}\n\n¿Desea imprimir la factura?`,
         [
           {
             text: 'No',
@@ -252,22 +278,54 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
           {
             text: 'Sí',
             onPress: () => {
-              console.log('🖨️ Usuario eligió imprimir - Preparando impresión...');
-              // TODO: Implementar lógica de impresión aquí
-              Alert.alert(
-                '🖨️ Impresión',
-                'Función de impresión en desarrollo.\n\nLa factura se ha guardado correctamente.',
-                [
-                  {
-                    text: 'Nueva Venta',
-                    onPress: () => resetForm()
-                  },
-                  {
-                    text: 'Volver al Inicio',
-                    onPress: () => navigation.goBack()
-                  }
-                ]
-              );
+              console.log('🖨️ Usuario eligió imprimir - Mostrando factura completa...');
+              
+              if (invoice) {
+                // Mostrar factura completa en un Alert
+                let facturaTexto = `${invoice.header.appName.toUpperCase()}\n`;
+                facturaTexto += `Factura: ${invoice.header.invoiceNumber}\n`;
+                facturaTexto += `Fecha: ${invoice.header.date}\n`;
+                facturaTexto += `Cliente: ${invoice.header.customerName}\n`;
+                facturaTexto += `Vendedor: ${invoice.header.vendorName}\n\n`;
+                facturaTexto += `PRODUCTOS:\n`;
+                
+                invoice.items.forEach(item => {
+                  facturaTexto += `${item.lineNumber}. ${item.productName}\n`;
+                  facturaTexto += `   ${item.quantity} × $${item.unitPrice.toLocaleString('es-CO')} = $${item.totalPrice.toLocaleString('es-CO')}\n`;
+                });
+                
+                facturaTexto += `\nTOTAL: $${invoice.summary.total.toLocaleString('es-CO')} COP`;
+                
+                Alert.alert(
+                  '🧾 Factura Completa',
+                  facturaTexto,
+                  [
+                    {
+                      text: 'Nueva Venta',
+                      onPress: () => resetForm()
+                    },
+                    {
+                      text: 'Volver al Inicio',
+                      onPress: () => navigation.goBack()
+                    }
+                  ]
+                );
+              } else {
+                Alert.alert(
+                  '🖨️ Impresión',
+                  'Factura guardada correctamente.\n(Función de impresión en desarrollo)',
+                  [
+                    {
+                      text: 'Nueva Venta',
+                      onPress: () => resetForm()
+                    },
+                    {
+                      text: 'Volver al Inicio',
+                      onPress: () => navigation.goBack()
+                    }
+                  ]
+                );
+              }
             }
           }
         ]

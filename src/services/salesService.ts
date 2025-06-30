@@ -79,17 +79,16 @@ export const salesService = {
       console.log('🔄 Iniciando creación de venta...');
       console.log('📋 Datos recibidos:', saleData);
 
-      // Generar número de pedido único
-      const numeroMarcaTiempo = Date.now().toString().slice(-6);
-      const numeroPedido = `VEN${numeroMarcaTiempo}`;
+      // Generar número de factura consecutivo
+      const numeroFactura = await this.generateConsecutiveNumber();
 
-      console.log('🔢 Número de pedido generado:', numeroPedido);
+      console.log('🔢 Número de factura generado:', numeroFactura);
 
       // 1. Crear el pedido principal
       const { data: pedido, error: pedidoError } = await supabase
         .from('pedidos')
         .insert({
-          numero_pedido: numeroPedido,
+          numero_pedido: numeroFactura,
           fecha_pedido: new Date().toISOString(),
           subtotal: saleData.total_amount,
           total: saleData.total_amount,
@@ -340,6 +339,101 @@ export const salesService = {
     } catch (error) {
       console.error('Error en registrarPago:', error);
       throw error;
+    }
+  },
+
+  // 🧾 Generar factura completa con formato mejorado
+  async generateInvoice(pedidoId: string): Promise<{
+    header: {
+      appName: string;
+      invoiceNumber: string;
+      date: string;
+      customerName: string;
+      vendorName: string;
+      vendorId: string;
+    };
+    items: Array<{
+      lineNumber: number;
+      productName: string;
+      unitPrice: number;
+      quantity: number;
+      totalPrice: number;
+    }>;
+    summary: {
+      subtotal: number;
+      total: number;
+      itemCount: number;
+    };
+  } | null> {
+    try {
+      console.log('🧾 Generando factura completa para pedido:', pedidoId);
+
+      // 1. Obtener información del pedido
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('id', pedidoId)
+        .single();
+
+      if (pedidoError || !pedido) {
+        console.error('❌ Error obteniendo pedido:', pedidoError);
+        return null;
+      }
+
+      // 2. Obtener información del vendedor
+      const { data: vendedor, error: vendedorError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', pedido.vendedor_id)
+        .single();
+
+      const vendorName = vendedor?.full_name || 'Vendedor no encontrado';
+
+      // 3. Obtener items del pedido con información de productos
+      const { data: items, error: itemsError } = await supabase
+        .from('pedido_items')
+        .select(`
+          *,
+          products!inner(name, price)
+        `)
+        .eq('pedido_id', pedidoId);
+
+      if (itemsError) {
+        console.error('❌ Error obteniendo items:', itemsError);
+        return null;
+      }
+
+      // 4. Formatear los datos para la factura
+      const formattedItems = (items || []).map((item, index) => ({
+        lineNumber: index + 1,
+        productName: item.products?.name || `Producto ${item.product_id}`,
+        unitPrice: item.precio_unitario,
+        quantity: item.cantidad,
+        totalPrice: item.precio_total
+      }));
+
+      // 5. Extraer nombre del cliente de las notas
+      const customerName = pedido.notas?.replace('Cliente: ', '') || 'Cliente no especificado';
+
+      return {
+        header: {
+          appName: 'TiquetApp',
+          invoiceNumber: pedido.numero_pedido,
+          date: new Date(pedido.fecha_pedido).toLocaleString('es-CO'),
+          customerName,
+          vendorName,
+          vendorId: pedido.vendedor_id
+        },
+        items: formattedItems,
+        summary: {
+          subtotal: pedido.subtotal,
+          total: pedido.total,
+          itemCount: formattedItems.length
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error generando factura:', error);
+      return null;
     }
   },
 };
