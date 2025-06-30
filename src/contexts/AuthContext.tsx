@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ data: any; error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   refreshProfile: () => Promise<void>;
+  checkSessionStatus: () => Promise<Session | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,8 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('🔐 Inicializando AuthContext...');
+    
     // Obtener sesión inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Error obteniendo sesión inicial:', error);
+      } else {
+        console.log('🔐 Sesión inicial:', session ? `Usuario: ${session.user.email}` : 'Sin sesión');
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -49,15 +58,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('🔐 Auth state change:', _event, session?.user?.email);
+      async (event, session) => {
+        console.log('🔐 Auth state change:', event, session?.user?.email || 'Sin usuario');
+        
+        // Log adicional para debug
+        if (event === 'SIGNED_IN') {
+          console.log('✅ Usuario ha iniciado sesión');
+        } else if (event === 'SIGNED_OUT') {
+          console.log('🚪 Usuario ha cerrado sesión');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('🔄 Token renovado automáticamente');
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔐 Limpiando suscripción de auth...');
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Cargar perfil cuando cambie el usuario
@@ -163,6 +185,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const checkSessionStatus = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('🔍 Estado actual de sesión:', {
+        hasSession: !!session,
+        userEmail: session?.user?.email,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'N/A',
+        error: error?.message
+      });
+      return session;
+    } catch (error) {
+      console.error('❌ Error verificando sesión:', error);
+      return null;
+    }
+  };
+
   const value: AuthContextType = {
     session,
     user,
@@ -173,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signOut,
     refreshProfile,
+    checkSessionStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
