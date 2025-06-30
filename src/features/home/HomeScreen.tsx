@@ -16,8 +16,24 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
  */
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { totalProducts, totalSales, totalCredito, loading, error, refetch } = useDashboardStats();
+  const { 
+    ventasHoy, 
+    ingresosHoy, 
+    loading, 
+    error, 
+    refetch 
+  } = useDashboardStats();
   const { userProfile } = useAuthContext();
+
+  // Debug: Mostrar valores recibidos del hook
+  React.useEffect(() => {
+    console.log('🏠 HomeScreen - Estado del dashboard:', {
+      ventasHoy,
+      ingresosHoy,
+      loading,
+      error
+    });
+  }, [ventasHoy, ingresosHoy, loading, error]);
 
   // 🚀 Navegación principal
   const goToProducts = () => {
@@ -143,22 +159,15 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{totalSales}</Text>
+                <Text style={styles.statNumber}>{ventasHoy}</Text>
                 <Text style={styles.statLabel}>Ventas Hoy</Text>
               </View>
               
               <View style={styles.statDivider} />
               
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{totalProducts}</Text>
-                <Text style={styles.statLabel}>Productos</Text>
-              </View>
-              
-              <View style={styles.statDivider} />
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>${totalCredito}</Text>
-                <Text style={styles.statLabel}>Ingresos</Text>
+                <Text style={styles.statNumber}>${(ingresosHoy || 0).toLocaleString('es-CO')}</Text>
+                <Text style={styles.statLabel}>Ingresos Hoy</Text>
               </View>
             </View>
           )}
