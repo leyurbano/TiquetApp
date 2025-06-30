@@ -178,7 +178,7 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
 
   // Obtener items de la venta
   const getSaleItems = (): SaleItem[] => {
-    return Object.entries(quantities)
+    const items = Object.entries(quantities)
       .filter(([_, quantity]) => quantity > 0)
       .map(([productId, quantity]) => {
         const product = products.find(p => p.id === parseInt(productId))!;
@@ -188,6 +188,9 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
           subtotal: quantity * product.price
         };
       });
+    
+    console.log('🛒 Items calculados:', items);
+    return items;
   };
 
   // Obtener total de la venta
@@ -198,6 +201,9 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
   // Procesar la venta
   const handleProcessSale = async () => {
     const saleItems = getSaleItems();
+    
+    console.log('🛒 Iniciando proceso de facturación...');
+    console.log('📦 Items de venta:', saleItems);
     
     if (saleItems.length === 0) {
       Alert.alert('Error', 'Agrega al menos un producto a la venta');
@@ -223,25 +229,60 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
         }))
       };
 
-      await salesService.createSale(saleData);
+      console.log('📋 Datos de venta preparados:', saleData);
+      console.log('💰 Total calculado:', getTotalAmount());
 
+      const result = await salesService.createSale(saleData);
+      
+      console.log('✅ Venta facturada exitosamente:', result);
+
+      // Mostrar cuadro de confirmación de impresión
       Alert.alert(
-        '✅ ¡Venta Registrada!',
-        `Se registró la venta por $COP ${getTotalAmount().toLocaleString('es-CO')}`,
+        '✅ ¡Venta Facturada!',
+        `Se facturó la venta por $COP ${getTotalAmount().toLocaleString('es-CO')}\n\n¿Desea imprimir la factura?`,
         [
           {
-            text: 'Nueva Venta',
-            onPress: () => resetForm()
+            text: 'No',
+            style: 'cancel',
+            onPress: () => {
+              console.log('🔄 Usuario eligió no imprimir - Limpiando formulario...');
+              resetForm();
+            }
           },
           {
-            text: 'Volver al Inicio',
-            onPress: () => navigation.goBack()
+            text: 'Sí',
+            onPress: () => {
+              console.log('🖨️ Usuario eligió imprimir - Preparando impresión...');
+              // TODO: Implementar lógica de impresión aquí
+              Alert.alert(
+                '🖨️ Impresión',
+                'Función de impresión en desarrollo.\n\nLa factura se ha guardado correctamente.',
+                [
+                  {
+                    text: 'Nueva Venta',
+                    onPress: () => resetForm()
+                  },
+                  {
+                    text: 'Volver al Inicio',
+                    onPress: () => navigation.goBack()
+                  }
+                ]
+              );
+            }
           }
         ]
       );
     } catch (error) {
-      console.error('Error creando venta:', error);
-      Alert.alert('Error', 'No se pudo registrar la venta');
+      console.error('❌ Error completo creando venta:', error);
+      console.error('❌ Tipo de error:', typeof error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('❌ Mensaje del error:', errorMessage);
+      
+      Alert.alert(
+        'Error', 
+        `No se pudo registrar la venta: ${errorMessage}`
+      );
     } finally {
       setLoading(false);
     }
@@ -364,7 +405,7 @@ export const CatalogSalesScreen: React.FC<CatalogSalesScreenProps> = ({ navigati
                 style={styles.actionButton}
               />
               <Button
-                title={loading ? '⏳ Procesando...' : `💰 Procesar $COP ${getTotalAmount().toLocaleString('es-CO')}`}
+                title={loading ? '⏳ Facturando...' : '💰 Facturar'}
                 onPress={handleProcessSale}
                 disabled={loading || getSaleItems().length === 0 || !customerName.trim()}
                 style={styles.actionButton}
