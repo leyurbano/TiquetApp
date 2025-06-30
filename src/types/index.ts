@@ -47,7 +47,7 @@ export interface Product {
 // Movimiento de inventario
 export interface MovimientoInventario {
   id: string;
-  product_id: string;
+  product_id: string; // TEMPORAL: Compatible con el sistema actual
   tipo_movimiento: 'venta' | 'devolucion' | 'ajuste' | 'merma';
   cantidad: number;
   stock_anterior: number;
@@ -76,7 +76,7 @@ export interface Pedido {
 export interface PedidoItem {
   id: string;
   pedido_id: string;
-  product_id: string;
+  product_id: string; // TEMPORAL: UUID generado hasta corregir DB
   cantidad: number;
   precio_unitario: number;
   precio_total: number;

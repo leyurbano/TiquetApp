@@ -9,6 +9,7 @@ import { AuthScreen } from '../screens/AuthScreen';
 import HomeScreen from '../features/home/HomeScreen';
 import ProductScreen from '../features/products/ProductScreen';
 import SalesScreen from '../features/sales/SalesScreen';
+import CatalogSalesScreen from '../features/sales/CatalogSalesScreen';
 import ControlPanelScreen from '../features/admin/ControlPanelScreen';
 
 // 🎯 Tipos de navegación actualizados
@@ -17,6 +18,7 @@ export type RootStackParamList = {
   Home: undefined;
   Products: undefined;
   Sales: undefined;
+  CatalogSales: undefined;
   ControlPanel: undefined;
 };
 
@@ -130,6 +132,11 @@ export default function AppNavigator() {
               name="Sales" 
               component={SalesScreen}
               options={{ title: '💰 Ventas' }}
+            />
+            <Stack.Screen 
+              name="CatalogSales" 
+              component={CatalogSalesScreen}
+              options={{ title: '🛒 Nueva Venta' }}
             />
             <Stack.Screen 
               name="ControlPanel" 

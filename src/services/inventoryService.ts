@@ -35,7 +35,7 @@ export class InventoryService {
 
   // Registrar movimiento de inventario
   static async registrarMovimiento(movimiento: {
-    product_id: string;
+    product_id: string; // Volvemos a string para compatibilidad
     tipo_movimiento: 'venta' | 'devolucion' | 'ajuste' | 'merma';
     cantidad: number;
     motivo?: string;
@@ -126,7 +126,7 @@ export class InventoryService {
 
   // Ajustar stock masivo
   static async ajustarStockMasivo(ajustes: Array<{
-    product_id: string;
+    product_id: string; // Volvemos a string para compatibilidad
     nuevo_stock: number;
     motivo?: string;
   }>): Promise<{ exitosos: number; fallidos: number }> {

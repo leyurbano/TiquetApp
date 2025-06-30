@@ -36,7 +36,7 @@ export class PedidoService {
   static async createPedido(pedidoData: {
     tendero_id: string;
     items: Array<{
-      product_id: string;
+      product_id: string; // Volvemos a string para compatibilidad
       cantidad: number;
       precio_unitario: number;
     }>;
