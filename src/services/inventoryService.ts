@@ -10,7 +10,6 @@ export class InventoryService {
         .from('movimientos_inventario')
         .select(`
           *,
-          product:products(name),
           creado_por_info:users_info!creado_por(full_name)
         `)
         .order('created_at', { ascending: false });

@@ -389,13 +389,10 @@ export const salesService = {
 
       const vendorName = vendedor?.full_name || 'Vendedor no encontrado';
 
-      // 3. Obtener items del pedido con información de productos
+      // 3. Obtener items del pedido (sin JOIN por ahora)
       const { data: items, error: itemsError } = await supabase
         .from('pedido_items')
-        .select(`
-          *,
-          products!inner(name, price)
-        `)
+        .select(`*`)
         .eq('pedido_id', pedidoId);
 
       if (itemsError) {
@@ -403,16 +400,32 @@ export const salesService = {
         return null;
       }
 
-      // 4. Formatear los datos para la factura
-      const formattedItems = (items || []).map((item, index) => ({
-        lineNumber: index + 1,
-        productName: item.products?.name || `Producto ${item.product_id}`,
-        unitPrice: item.precio_unitario,
-        quantity: item.cantidad,
-        totalPrice: item.precio_total
-      }));
+      // 4. Obtener información de productos por separado
+      const productIds = items?.map(item => item.product_id) || [];
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name, price')
+        .in('id', productIds);
 
-      // 5. Extraer nombre del cliente de las notas
+      // 5. Crear un mapa de productos para fácil acceso
+      const productMap = new Map();
+      products?.forEach(product => {
+        productMap.set(product.id, product);
+      });
+
+      // 6. Formatear los datos para la factura
+      const formattedItems = (items || []).map((item, index) => {
+        const product = productMap.get(item.product_id);
+        return {
+          lineNumber: index + 1,
+          productName: product?.name || `Producto ${item.product_id}`,
+          unitPrice: item.precio_unitario,
+          quantity: item.cantidad,
+          totalPrice: item.precio_total || (item.precio_unitario * item.cantidad)
+        };
+      });
+
+      // 7. Extraer nombre del cliente de las notas
       const customerName = pedido.notas?.replace('Cliente: ', '') || 'Cliente no especificado';
 
       return {

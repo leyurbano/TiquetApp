@@ -6,25 +6,22 @@ export class PedidoService {
   // Obtener todos los pedidos
   static async getAllPedidos(): Promise<PedidoWithDetails[]> {
     try {
+      console.log('📋 Obteniendo pedidos...');
       const { data, error } = await supabase
         .from('pedidos')
         .select(`
           *,
-          items:pedido_items(
-            *,
-            product:products(*)
-          ),
-          pagos:pagos(*),
-          vendedor:vendedor_id(full_name, phone),
-          tendero:tendero_id(full_name, phone)
+          items:pedido_items(*)
         `)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error al obtener pedidos:', error);
+        console.error('❌ Error al obtener pedidos:', error);
+        console.error('Detalles del error:', error);
         return [];
       }
 
+      console.log('✅ Pedidos obtenidos:', data?.length || 0);
       return data as PedidoWithDetails[];
     } catch (error) {
       console.error('Error en getAllPedidos:', error);
@@ -220,10 +217,7 @@ export class PedidoService {
         .from('pedidos')
         .select(`
           *,
-          items:pedido_items(
-            *,
-            product:products(*)
-          ),
+          items:pedido_items(*),
           pagos:pagos(*)
         `)
         .eq('tendero_id', tenderoId)
@@ -248,10 +242,7 @@ export class PedidoService {
         .from('pedidos')
         .select(`
           *,
-          items:pedido_items(
-            *,
-            product:products(*)
-          ),
+          items:pedido_items(*),
           pagos:pagos(*)
         `)
         .eq('vendedor_id', vendedorId)
@@ -276,10 +267,7 @@ export class PedidoService {
         .from('pedidos')
         .select(`
           *,
-          items:pedido_items(
-            *,
-            product:products(*)
-          ),
+          items:pedido_items(*),
           pagos:pagos(*),
           vendedor:users_info!vendedor_id(*),
           tendero:users_info!tendero_id(*)
