@@ -203,7 +203,7 @@ export async function updateProductStock(id: string, newStock: number, motivo?: 
     // Obtener el stock actual
     const { data: currentProduct } = await supabase
       .from('products')
-      .select('stock_actual')
+      .select('stock')
       .eq('id', id)
       .single();
 
@@ -212,14 +212,14 @@ export async function updateProductStock(id: string, newStock: number, motivo?: 
       return false;
     }
 
-    const stockAnterior = currentProduct.stock_actual;
+    const stockAnterior = currentProduct.stock;
     const { data: { user } } = await supabase.auth.getUser();
 
     // Actualizar el stock del producto
     const { error: updateError } = await supabase
       .from('products')
       .update({ 
-        stock_actual: newStock,
+        stock: newStock,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -269,31 +269,22 @@ export async function insertTestProducts(): Promise<boolean> {
       { 
         name: 'Coca Cola 600ml', 
         description: 'Bebida gaseosa sabor original',
-        precio_compra: 800, 
-        precio_venta: 1200, 
-        stock_actual: 50,
-        stock_minimo: 10,
-        requiere_refrigeracion: true,
+        price: 1200, 
+        stock: 50,
         created_by: user?.id
       },
       { 
         name: 'Pan Tajado Bimbo', 
         description: 'Pan de molde rebanado',
-        precio_compra: 2000, 
-        precio_venta: 2800, 
-        stock_actual: 20,
-        stock_minimo: 5,
-        requiere_refrigeracion: false,
+        price: 2800, 
+        stock: 20,
         created_by: user?.id
       },
       { 
         name: 'Leche Entera Alpina 1L', 
         description: 'Leche entera pasteurizada',
-        precio_compra: 2500, 
-        precio_venta: 3200, 
-        stock_actual: 30,
-        stock_minimo: 8,
-        requiere_refrigeracion: true,
+        price: 3200, 
+        stock: 30,
         created_by: user?.id
       }
     ];
@@ -328,16 +319,16 @@ export async function getLowStockProducts(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('stock_actual', { ascending: true });
+      .order('stock', { ascending: true });
 
     if (error) {
       console.error('❌ Error al obtener productos:', error.message);
       return [];
     }
 
-    // Filtrar productos donde stock_actual <= stock_minimo
+    // Filtrar productos donde stock <= 5 (stock bajo)
     const lowStockProducts = data?.filter(product => 
-      product.stock_actual <= product.stock_minimo
+      product.stock <= 5
     ) || [];
 
     console.log('✅ Productos con bajo stock obtenidos:', lowStockProducts.length);

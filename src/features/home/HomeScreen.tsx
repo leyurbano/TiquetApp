@@ -34,8 +34,7 @@ export default function HomeScreen() {
 
   // 💰 Ir a crear nueva venta
   const goToNewSale = () => {
-    // TODO: Implementar pantalla de nueva venta
-    Alert.alert('🚧 Próximamente', 'Función de venta en desarrollo');
+    navigation.navigate('CatalogSales');
   };
 
   // 🧪 Función para insertar datos de prueba (desarrollo)
